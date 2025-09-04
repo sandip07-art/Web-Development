@@ -1,0 +1,23 @@
+body{
+    margin: 0px;
+}
+
+.box{
+    border: 5px solid;
+    font-size:5em;
+    width: 250px;
+    height: 250px;
+}
+
+#box1{
+    background-color: rgb(77, 193, 77);
+    margin: auto;
+    margin-bottom: 50px;
+
+}
+
+#box2{
+    background-color: rgb(53, 214, 214);
+    margin: auto;
+    
+}
