@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Automatic Calculator</title>
+  <style>
+    :root{--bg:#0f1724;--card:#0b1220;--accent:#06b6d4;--muted:#94a3b8;--glass: rgba(255,255,255,0.04)}
+    *{box-sizing:border-box;font-family:Inter, system-ui, Arial, sans-serif}
+    body{margin:0;min-height:100vh;background:linear-gradient(180deg,#050d19 0%, #0b1b2b 100%);display:flex;align-items:center;justify-content:center;padding:24px;color:#e6eef6}
+    .card{width:100%;max-width:440px;background:var(--card);border-radius:14px;padding:18px;box-shadow:0 8px 30px rgba(2,6,23,0.6)}
+    .top{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    .brand{font-weight:700;font-size:18px;color:var(--accent)}
+    .screen{background:var(--glass);padding:12px;border-radius:10px;margin-top:12px}
+    input[type="text"]{width:100%;background:transparent;border:0;color:inherit;font-size:20px;padding:8px;outline:none}
+    .row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+    button{flex:1;padding:12px;border-radius:8px;border:0;background:#0e1622;color:inherit;cursor:pointer;font-weight:600;transition:background 0.2s}
+    button:hover{background:#162433}
+    button.op{background:transparent;border:1px solid rgba(255,255,255,0.04)}
+    .result{margin-top:12px;font-size:22px;font-weight:700;color:#d1f0f6;word-break:break-all}
+    .history{margin-top:12px;max-height:120px;overflow:auto;padding-right:6px}
+    .hist-item{padding:6px 8px;border-radius:6px;background:rgba(255,255,255,0.02);margin-bottom:6px;font-size:13px;color:var(--muted)}
+    .footer{margin-top:12px;font-size:13px;color:var(--muted);display:flex;flex-wrap:wrap;justify-content:space-between}
+    @media (max-width:500px){
+      button{flex:1 1 calc(25% - 8px)}
+      #enter{flex:1 1 100%}
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="top">
+      <div class="brand">AutoCalc</div>
+      <div style="margin-left:auto;color:var(--muted);font-size:13px">Live evaluation • Keyboard ready</div>
+    </div>
+
+    <div class="screen">
+      <input id="expr" type="text" placeholder="Type expression (e.g. 12+5*3 or 10% of 250)" autocomplete="off" />
+      <div class="result" id="result">Result: —</div>
+    </div>
+
+    <div class="row" style="margin-top:14px">
+      <button data-val="7">7</button>
+      <button data-val="8">8</button>
+      <button data-val="9">9</button>
+      <button class="op" data-val="/">÷</button>
+    </div>
+    <div class="row">
+      <button data-val="4">4</button>
+      <button data-val="5">5</button>
+      <button data-val="6">6</button>
+      <button class="op" data-val="*">×</button>
+    </div>
+    <div class="row">
+      <button data-val="1">1</button>
+      <button data-val="2">2</button>
+      <button data-val="3">3</button>
+      <button class="op" data-val="-">−</button>
+    </div>
+    <div class="row">
+      <button data-val="0">0</button>
+      <button data-val=".">.</button>
+      <button id="pct">%</button>
+      <button class="op" data-val="+">+</button>
+    </div>
+
+    <div class="row">
+      <button id="clear">Clear</button>
+      <button id="back">Back</button>
+      <button id="enter">Enter / Copy Result</button>
+    </div>
+
+    <div class="history" id="history"></div>
+
+    <div class="footer">
+      <div>Auto-eval as you type</div>
+      <div>&#x1F4BE; Offline</div>
+    </div>
+  </div>
+
+<script>
+  const expr = document.getElementById('expr');
+  const resEl = document.getElementById('result');
+  const historyEl = document.getElementById('history');
+
+  function safeEval(input){
+    if(!input || input.trim()==='') return '';
+    let s = input.replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-');
+    s = s.replace(/(\d+(?:\.\d+)?)\s*%\s*of\s*(\d+(?:\.\d+)?)/gi, '($1/100)*$2');
+    s = s.replace(/(\d+(?:\.\d+)?)%/g,'($1/100)');
+    if(/[a-zA-Z]/.test(s)){
+      return 'Invalid input';
+    }
+    try{
+      let r = eval(s);
+      if(typeof r === 'number' && !isFinite(r)) return 'Math error';
+      if(typeof r === 'number') return +r.toFixed(8).replace(/\.0+$/,'');
+      return r;
+    }catch(e){
+      return '—';
+    }
+  }
+
+  function update(){
+    const v = expr.value;
+    const out = safeEval(v);
+    resEl.textContent = 'Result: ' + out;
+  }
+
+  expr.addEventListener('input', update);
+
+  document.querySelectorAll('button[data-val]').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      expr.value += b.getAttribute('data-val');
+      expr.focus();
+      update();
+    });
+  });
+
+  document.getElementById('clear').addEventListener('click', ()=>{ expr.value=''; update(); });
+  document.getElementById('back').addEventListener('click', ()=>{ expr.value = expr.value.slice(0,-1); update(); });
+  document.getElementById('pct').addEventListener('click', ()=>{ expr.value += '%'; update(); });
+
+  document.getElementById('enter').addEventListener('click', ()=>{
+    const out = safeEval(expr.value);
+    if(out === '—' || out === '' || out === 'Invalid input') return;
+    navigator.clipboard && navigator.clipboard.writeText(String(out)).catch(()=>{});
+    const item = document.createElement('div'); item.className='hist-item';
+    item.textContent = expr.value + ' = ' + out;
+    historyEl.prepend(item);
+    expr.value=''+out; update();
+  });
+
+  expr.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('enter').click(); }
+    if(e.key === 'Escape'){ expr.value=''; update(); }
+  });
+
+  expr.focus();
+  update();
+</script>
+</body>
+</html>
